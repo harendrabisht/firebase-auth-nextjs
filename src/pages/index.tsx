@@ -4,11 +4,38 @@ import { Inter } from 'next/font/google'
 import Link from 'next/link';
 import styles from '@/styles/Home.module.css'
 import { useAuth } from '@/auth/auth'
-
-const inter = Inter({ subsets: ['latin'] })
+import { useEffect } from 'react';
+import { messaging, firebase as firebaseClient  } from "../firebase-utils/firebase-client";
+import { getToken, onMessage } from 'firebase/messaging'
 
 export default function Home() {
   const { user } = useAuth();
+  const requestPermission =async () => {
+    const permission = await Notification.requestPermission();
+    if(permission ==='granted') {
+      console.log('Granted');
+      const token = await getToken(messaging, { vapidKey: process.env.NEXT_WEBPUSH_CERTFICATE})
+      console.log(token)
+    } else if(permission === 'denied') {
+      console.log('Denied')
+    }
+  }
+
+  useEffect(() => {
+    requestPermission();
+    messaging.(function(payload  ) {
+      console.log('Received background message ', payload);
+    
+      const notificationTitle = payload?.notification?.title;
+      const notificationOptions = {
+        body: payload?.notification?.body,
+      };
+    
+      console.log(notificationTitle, notificationOptions)
+      // self.registration.showNotification(notificationTitle,
+      //   notificationOptions);
+    });
+  },[])
   return (
     <>
       <Head>
@@ -17,7 +44,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main} ${inter.className}`}>
+      <main>
         <div style={{ padding: '40px' }}>
         <p>{`User ID: ${user ? user.uid : 'no user signed in'}`}</p>
 
